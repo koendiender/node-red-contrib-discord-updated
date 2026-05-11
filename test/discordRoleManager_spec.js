@@ -15,8 +15,9 @@ describe('discordRoleManager Node', function () {
   let guild;
 
   beforeEach(function () {
-    const makeCollection = (ids) => ({
-      size: ids.length,
+    // reportedSize lets tests simulate a full page (size=1000) vs last page (size=actual)
+    const makeCollection = (ids, reportedSize = ids.length) => ({
+      size: reportedSize,
       each: (fn) => ids.forEach(id => fn({ id, roles: { cache: { has: () => true } } })),
       last: () => (ids.length ? { id: ids[ids.length - 1] } : undefined),
     });
@@ -27,7 +28,7 @@ describe('discordRoleManager Node', function () {
       },
       members: {
         fetch: sinon.stub()
-          .onFirstCall().resolves(makeCollection(['1', '2']))
+          .onFirstCall().resolves(makeCollection(['1', '2'], 1000))
           .onSecondCall().resolves(makeCollection(['3']))
           .onThirdCall().resolves(makeCollection([])),
       },

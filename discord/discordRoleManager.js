@@ -13,32 +13,35 @@ const checkIdOrObject = (check) => {
   }
 };
 
+const PAGE_SIZE = 1000;
+
 const fetchMembersByRole = async (guild, roleId, options = {}) => {
   const limit = Math.min(Math.max(options.limit || 1000, 1), 5000);
   const pageLimit = Math.min(Math.max(options.pageLimit || 10, 1), 100);
   const withPresences = options.includePresences === true;
   const afterStart = options.after ? options.after.toString() : undefined;
 
+  const fetchedIds = new Set();
   let fetched = [];
   let after = afterStart;
 
   for (let page = 0; page < pageLimit && fetched.length < limit; page++) {
-    const remaining = Math.min(limit - fetched.length, 1000);
     const previousAfter = after;
-    const members = await guild.members.fetch({ limit: remaining, after, withPresences });
+    const members = await guild.members.fetch({ limit: PAGE_SIZE, after, withPresences });
 
     if (!members || !members.size) {
       break;
     }
 
     members.each(member => {
-      if (member.roles.cache.has(roleId)) {
+      if (member.roles.cache.has(roleId) && !fetchedIds.has(member.id)) {
+        fetchedIds.add(member.id);
         fetched.push(clone(member));
       }
     });
 
     after = members.last()?.id;
-    if (!after || after === previousAfter) {
+    if (!after || after === previousAfter || members.size < PAGE_SIZE) {
       break;
     }
   }
